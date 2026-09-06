@@ -62,8 +62,8 @@ description = "Python and JVM-native observability: structured logging, W3C-corr
 #     skill-publisher is the authority on all of it, and on the
 #     install/bind/sync round trip that ships an edit into a store ---
 
-[skills.skill-publisher]
-source = "github:haydenrear/skill-publisher-skill"
+[skills.unit-authoring]
+source = "github:haydenrear/skt"
 
 # --- required BY skill-publisher, not chosen here: its SKILL.md `skill-imports`
 #     names `skill-manager` (references/skill-imports.md), and `project resolve`
@@ -73,7 +73,7 @@ source = "github:haydenrear/skill-publisher-skill"
 #     an edit to this unit actually reaches a store ---
 
 [skills.skill-manager]
-source = "github:haydenrear/skill-manager-skill"
+source = "github:haydenrear/skt"
 
 # --- no [[vendored]] block: this repo tracks no symlinks and has no test_graph,
 #     so no path in the working tree holds content owned by another unit.
