@@ -93,6 +93,50 @@ with get_tracer().start_as_current_span("orders.dispatch"):
 This Counter is the only package instrument with a `trace_id` attribute. Never
 add trace IDs to broad operational instruments.
 
+## Bound Correlation Cardinality Explicitly
+
+The compatible default still records every valid trace, including unsampled
+parents. A head sampler controls spans, not metric-series retention. For a
+long-lived service, choose the policy once at startup, **before any bounded
+operation helper runs**:
+
+```python
+from tracing_skill_observability import configure_trace_correlation
+
+# Example control, not an acceptance threshold; size it from the workload budget.
+configure_trace_correlation(sampled_only=True, max_traces=100)
+```
+
+`max_traces` limits distinct admitted trace IDs for the **process lifetime**.
+There is no timer or eviction: the SDK can retain an admitted series until exit.
+Repeated operations with an admitted ID remain selected after saturation; new
+IDs are suppressed. Reservations whose metric add fails still consume budget.
+`max_traces=0` admits none; `enabled=False` disables this counter. Repeating the
+same policy is idempotent, while changing it after the first operation raises
+instead of silently resetting the lifetime cap. Omit these options to retain
+legacy behavior. The policy does not change trace or log sampling/export.
+
+An explicitly configured policy adds
+`tracing_observability.trace_correlation_decisions` with only fixed `decision`
+and `reason` labels: selected, disabled, invalid_context, unsampled,
+budget_exhausted, busy or error. Diagnostics are best-effort when the meter is
+unavailable or locks contend; counters do not claim backend acknowledgement.
+No trace ID or operation name is added to these diagnostics.
+
+The cap is per process, **not a fleet or retention-window bound**. Restarts,
+service instances and backend retention multiply retained series; budget those
+separately and measure selected/suppressed counts and actual storage volume.
+Once saturated, no new IDs are admitted until process exit; do not repeatedly
+restart or reconfigure to evade the cap.
+
+The translated dedicated counter name remains
+`tracing_observability_trace_correlation_total`, preserving the monitoring CLI
+contract. A suppressed correlation metric means `monitoring trace <id>
+--require-all` fails even when spans/logs arrived. Use `--signal jaeger --signal
+logs --require-all` to diagnose only those requested signals; never report a
+suppressed or missing metric as delivered. Select an admitted sampled operation
+when demonstrating all-three-signal integration, and retain suppression evidence.
+
 ## Finite Processes
 
 `ObservabilityHandle.flush()` requests the standard SDK flush alongside logs

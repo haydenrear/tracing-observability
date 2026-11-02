@@ -65,7 +65,7 @@ Use these Python references:
   with traces.
 - [OpenTelemetry metrics](references/python/opentelemetry-metrics.md): author
   standard instruments, use the SDK-owned OTLP route, and create deliberately
-  trace-correlated measurements.
+  trace-correlated measurements and opt-in process-lifetime cardinality caps.
 - [Distribution and JVM consumption](references/python/distribution.md): pin
   the Python package immutably and implement the same W3C/flush contract in
   JVM consumers without embedding Python.
@@ -99,3 +99,12 @@ log = get_logger(__name__)
 def load_order(order_id: str):
     log.info("order.loaded", extra={"order_id": "ord_123"})
 ```
+
+## Correlation Selection
+
+Legacy helpers record the dedicated correlation counter for every valid parent,
+including unsampled parents. For long-lived consumers, choose an explicit
+startup policy with `configure_trace_correlation(sampled_only=True,
+max_traces=<workload budget>)` before any operation. Its process-lifetime cap
+does not bound fleet retention or restart churn. See the metrics reference for
+suppression diagnostics and the monitoring CLI missing-metric behavior.

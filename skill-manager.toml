@@ -8,5 +8,5 @@ binary = "tracing-observability-install"
 
 [skill]
 name = "tracing-observability"
-version = "0.3.0"
+version = "0.4.0"
 description = "Python and JVM-native observability: structured logging, W3C-correlated OTLP signals, and bounded fail-open lifecycle behavior."
