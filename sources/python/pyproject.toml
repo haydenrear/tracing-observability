@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tracing-skill-observability"
-version = "0.4.0"
+version = "0.4.1"
 description = "Structured logging, OpenTelemetry tracing, and native OpenTelemetry metrics for Python services."
 readme = "README.md"
 requires-python = ">=3.10"

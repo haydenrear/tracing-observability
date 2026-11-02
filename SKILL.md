@@ -72,6 +72,10 @@ Use these Python references:
 
 ## Span Rules
 
+For errors that may contain input values, select `configure_span_errors(mode="type_only")`
+before the first shared span (package 0.4.1+). The [Jaeger guide](references/python/jaeger-spans.md#exception-data-policy-041)
+explains the helper-only scope; raw SDK/third-party spans and logs need their own policy.
+
 - Prefer the library-provided `@traced_span` annotation for function
   instrumentation. It records exceptions on the span, marks failures as
   `ERROR`, and re-raises the original exception.
