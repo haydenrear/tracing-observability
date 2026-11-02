@@ -45,6 +45,9 @@ _tracer_processor_configured = False
 _tracer_provider_lock = Lock()
 _w3c_propagator = TraceContextTextMapPropagator()
 _trace_id_pattern = re.compile(r"[0-9a-f]{32}")
+_span_error_mode = "full"
+_span_error_policy_started = False
+_span_error_policy_lock = Lock()
 
 
 @dataclass(frozen=True)
@@ -217,13 +220,49 @@ def force_flush_tracing(timeout_millis: int = 5_000) -> bool:
     return bool(outcome["success"]) and time.monotonic() < deadline
 
 
+def configure_span_errors(*, mode: str = "full") -> None:
+    """Choose shared-helper exception capture before the first shared span.
+
+    full retains legacy SDK message/stacktrace recording. type_only records
+    only the exception class and never formats the exception value. This does
+    not redact explicit attributes, logs, or spans created outside our helpers.
+    """
+    global _span_error_mode
+    if not isinstance(mode, str) or mode not in ("full", "type_only"):
+        raise ValueError("mode must be 'full' or 'type_only'")
+    with _span_error_policy_lock:
+        if _span_error_policy_started and mode != _span_error_mode:
+            raise RuntimeError("configure span errors before the first shared span")
+        _span_error_mode = mode
+
+
+def _span_error_mode_for_operation() -> str:
+    global _span_error_policy_started
+    with _span_error_policy_lock:
+        _span_error_policy_started = True
+        return _span_error_mode
+
+
 @contextmanager
 def span(name: str, **attributes: Any) -> Iterator[trace.Span]:
-    with get_tracer().start_as_current_span(name) as active_span:
-        for key, value in attributes.items():
-            active_span.set_attribute(key, value)
+    mode = _span_error_mode_for_operation()
+    # Preserve the SDK's existing full-mode exception handling.
+    if mode == "full":
+        with get_tracer().start_as_current_span(name) as active_span:
+            _set_attributes(active_span, attributes)
+            _record_trace_correlation()
+            yield active_span
+        return
+    with get_tracer().start_as_current_span(
+        name, record_exception=False, set_status_on_exception=False
+    ) as active_span:
+        _set_attributes(active_span, attributes)
         _record_trace_correlation()
-        yield active_span
+        try:
+            yield active_span
+        except Exception as exc:
+            _record_span_error(active_span, exc, mode=mode)
+            raise
 
 
 @overload
@@ -268,6 +307,7 @@ def _decorate_with_span(
 
         @wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
+            mode = _span_error_mode_for_operation()
             with get_tracer().start_as_current_span(
                 name,
                 record_exception=False,
@@ -278,13 +318,14 @@ def _decorate_with_span(
                 try:
                     return await func(*args, **kwargs)
                 except Exception as exc:
-                    _record_span_error(active_span, exc)
+                    _record_span_error(active_span, exc, mode=mode)
                     raise
 
         return async_wrapper
 
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs):
+        mode = _span_error_mode_for_operation()
         with get_tracer().start_as_current_span(
             name,
             record_exception=False,
@@ -295,7 +336,7 @@ def _decorate_with_span(
             try:
                 return func(*args, **kwargs)
             except Exception as exc:
-                _record_span_error(active_span, exc)
+                _record_span_error(active_span, exc, mode=mode)
                 raise
 
     return wrapper
@@ -306,7 +347,14 @@ def _set_attributes(active_span: trace.Span, attributes: dict[str, Any]) -> None
         active_span.set_attribute(key, value)
 
 
-def _record_span_error(active_span: trace.Span, exc: Exception) -> None:
+def _record_span_error(
+    active_span: trace.Span, exc: Exception, *, mode: str = "full"
+) -> None:
+    if mode == "type_only":
+        error_type = f"{type(exc).__module__}.{type(exc).__qualname__}"
+        active_span.add_event("exception", {"exception.type": error_type})
+        active_span.set_status(Status(StatusCode.ERROR, error_type))
+        return
     active_span.record_exception(exc)
     active_span.set_status(Status(StatusCode.ERROR, str(exc)))
 

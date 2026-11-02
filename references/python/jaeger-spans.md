@@ -253,3 +253,29 @@ Jaeger's storage is in-memory by design. Traces do survive a *service*
 cluster being destroyed — which is the property the split-out was for —
 but they do not survive the monitoring cluster itself restarting. A
 week-old trace is gone, and its logs are gone at three days.
+
+
+## Exception data policy (0.4.1)
+
+Before the first shared `span` or `traced_span` operation, applications whose
+exceptions can contain input values can select type-only capture:
+
+```python
+from tracing_skill_observability import configure_span_errors
+configure_span_errors(mode="type_only")
+```
+
+This records one `exception` event with only `exception.type` and an ERROR
+status containing the qualified exception class. It never formats the exception
+value or records its message/stacktrace. The original exception is re-raised
+unchanged. Successful spans and cancellation classification retain their
+existing behavior. Repeating the same policy is allowed; changing it after the
+first shared operation raises rather than changing concurrent operations.
+
+The default `mode="full"` retains legacy message/stacktrace capture. This is a
+policy for these two shared helpers, not a global redaction filter: explicit
+attributes/events, application logs, raw SDK spans and third-party
+instrumentation are outside it. An outer raw SDK span can capture a re-raised
+exception again. Applications must separately use allowlisted log fields and
+safe top-level error handling when raw stderr would contain payload values.
+Do not claim backend delivery or blanket redaction from this policy.

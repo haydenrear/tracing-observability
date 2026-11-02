@@ -128,3 +128,10 @@ alone does not bound metric cardinality. Fixed-label selection diagnostics
 report suppression; suppressed metric IDs will not satisfy the monitoring CLI's
 all-three-signal requirement. See `references/python/opentelemetry-metrics.md`
 for restart/fleet retention limits and explicit policy semantics.
+
+
+For payload-bearing errors (0.4.1+), call
+`configure_span_errors(mode="type_only")` before the first shared operation.
+Only exception class/event and ERROR status are recorded; the original error is
+re-raised. Default full capture is retained for compatibility. This does not
+redact arbitrary attributes, logs, raw SDK spans, or outer third-party spans.

@@ -25,6 +25,7 @@ from .metrics import (
 from .tracing import (
     TraceHandle,
     configure_tracing,
+    configure_span_errors,
     current_trace_handle,
     current_trace_id,
     extract_trace_context,
@@ -216,6 +217,7 @@ __all__ = [
     "configure_observability",
     "configure_observability_from_file",
     "configure_tracing",
+    "configure_span_errors",
     "current_trace_handle",
     "current_trace_id",
     "extract_trace_context",
