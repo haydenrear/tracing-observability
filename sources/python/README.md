@@ -11,7 +11,7 @@ lifecycle.
 - Native OpenTelemetry metrics with package-owned periodic OTLP export by
   default, or unchanged use of an externally managed host provider.
 - Trace and span IDs in log records emitted inside active spans.
-- W3C `traceparent` propagation, an agent-visible trace handle, and a
+- W3C `traceparent`/`tracestate` propagation, an agent-visible trace handle, and a
   fail-open flush barrier for finite processes.
 
 ## Configure
@@ -116,3 +116,15 @@ on their prior pin until their migration ticket lands.
 Consumers must use a versioned wheel or a full Git-commit pin; never commit an
 integration-machine path. See
 `../../references/python/distribution.md` for distribution guidance.
+
+## Optional Lifetime Correlation Budget
+
+Before operation helpers run, call
+`configure_trace_correlation(sampled_only=True, max_traces=<budget>)` to cap
+distinct dedicated correlation metric series for this process lifetime. Default eligibility
+remains uncapped, including valid unsampled parents. Recording is best-effort;
+nonblocking lock contention or SDK failures can suppress eligible operations. Head sampling
+alone does not bound metric cardinality. Fixed-label selection diagnostics
+report suppression; suppressed metric IDs will not satisfy the monitoring CLI's
+all-three-signal requirement. See `references/python/opentelemetry-metrics.md`
+for restart/fleet retention limits and explicit policy semantics.

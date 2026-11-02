@@ -6,7 +6,7 @@ to a project manifest or lockfile.
 
 ## Python
 
-The package version is `0.3.0`. Until that wheel is published to a package
+The package version is `0.4.0` (additive correlation policy API). Until that wheel is published to a package
 registry, pin the tracing-skill repository by its full 40-character commit SHA:
 
 ```bash
@@ -17,6 +17,11 @@ uv lock --check
 This pin is the first remotely fetchable tracing-skill commit containing the
 reviewed `0.3.0` provider. Commit both `pyproject.toml` and `uv.lock`; the lock
 must retain this resolved commit, not a branch or tag that can move.
+
+The example revision above remains the reviewed 0.3.0 compatibility floor.
+Consumers using `configure_trace_correlation` must pin a merged immutable
+revision containing 0.4.0; record the resolved revision in their lockfile rather
+than assuming the older example provides the new API.
 
 The skill-manager installer builds a versioned wheel once and installs that
 wheel into selected environments. Its generated `tracing-observability-install`

@@ -17,6 +17,7 @@ from .logging import (
 )
 from .metrics import (
     configure_metrics,
+    configure_trace_correlation,
     force_flush_metrics,
     get_meter,
     record_trace_correlation,
@@ -211,6 +212,7 @@ __all__ = [
     "TraceHandle",
     "configure_logging",
     "configure_metrics",
+    "configure_trace_correlation",
     "configure_observability",
     "configure_observability_from_file",
     "configure_tracing",

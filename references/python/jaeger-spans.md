@@ -230,6 +230,12 @@ monitoring trace <id> --json           # machine-readable
 when the span reached Jaeger, the log line reached Loki carrying the trace
 id, and a metric series carrying a `trace_id` label reached Prometheus.
 
+An explicitly selected correlation policy may suppress a metric after its
+process-lifetime cap or when its parent is unsampled. In that case a missing
+metric is expected and `--require-all` remains a failed all-three-signal check;
+select only the requested Jaeger/log signals to inspect them. See the metrics
+reference for the policy, bounded diagnostics and retention caveats.
+
 The Jaeger UI is on the monitoring cluster at `http://localhost:16686`.
 
 ## What The Backends Remember
