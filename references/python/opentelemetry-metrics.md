@@ -151,3 +151,17 @@ The result reports only surfaced SDK completion. It does not promise exporter
 or backend acknowledgement. For an externally managed provider, the host
 defines the meaning of its public flush result. Failures are logged and remain
 fail-open.
+
+
+### Caller deadline (0.4.2)
+
+`force_flush_metrics(timeout_millis=...)` bounds the caller's wait even if a
+public SDK flush ignores its advisory timeout. A daemon worker retains the
+selected provider's lifecycle lock until SDK work really finishes. A timeout
+returns false; subsequent calls wait only their own remaining budget and do not
+start overlapping workers. The work is not cancelled and may finish later.
+The aggregate flush still uses one inclusive budget across signals.
+
+This governs the flush API call, not separate SDK `atexit` shutdown callbacks or
+an externally owned provider's lifecycle. Measure process exit separately.
+A true flush reports surfaced SDK completion, never backend acknowledgement.

@@ -4,7 +4,7 @@ import logging
 import math
 import os
 import time
-from threading import Lock
+from threading import Event, Lock, Thread
 
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
@@ -193,34 +193,51 @@ def record_trace_correlation() -> bool:
 
 
 def force_flush_metrics(timeout_millis: int = 5_000) -> bool:
-    """Request public SDK flush completion without claiming backend delivery."""
+    """Bound the caller wait even when an SDK ignores its advisory timeout.
 
+    Timed-out SDK work is not cancelled. Its lifecycle lock stays held until it
+    actually ends, so repeated calls cannot create overlapping flush workers.
+    Completion is not exporter/backend delivery acknowledgement.
+    """
     deadline = time.monotonic() + max(0, timeout_millis) / 1_000
     if not _meter_provider_lock.acquire(
         timeout=max(0.0, deadline - time.monotonic())
     ):
         return False
-    try:
-        provider = _meter_provider
-    finally:
+    provider = _meter_provider
+    if provider is None or time.monotonic() >= deadline:
         _meter_provider_lock.release()
-    if provider is None:
         return False
-    remaining_seconds = deadline - time.monotonic()
-    if remaining_seconds <= 0:
-        return False
-    force_flush = getattr(provider, "force_flush", None)
-    if force_flush is None:
-        return False
+    complete = Event()
+    outcome = {"success": False}
+
+    def flush_selected_provider() -> None:
+        try:
+            force_flush = getattr(provider, "force_flush", None)
+            remaining = deadline - time.monotonic()
+            if force_flush is not None and remaining > 0:
+                outcome["success"] = bool(
+                    force_flush(timeout_millis=math.ceil(remaining * 1_000))
+                )
+        except Exception:
+            _log.exception("observability.metrics.flush_failed")
+        finally:
+            _meter_provider_lock.release()
+            complete.set()
+
     try:
-        return bool(
-            force_flush(
-                timeout_millis=math.ceil(remaining_seconds * 1_000),
-            )
-        )
+        Thread(
+            target=flush_selected_provider,
+            name="observability-metrics-flush",
+            daemon=True,
+        ).start()
     except Exception:
-        _log.exception("observability.metrics.flush_failed")
+        _meter_provider_lock.release()
+        _log.exception("observability.metrics.flush_worker_failed")
         return False
+    if not complete.wait(timeout=max(0.0, deadline - time.monotonic())):
+        return False
+    return outcome["success"] and time.monotonic() < deadline
 
 
 def _metrics_resource(
