@@ -102,8 +102,9 @@ def load_order(order_id: str):
 
 ## Correlation Selection
 
-Legacy helpers record the dedicated correlation counter for every valid parent,
-including unsampled parents. For long-lived consumers, choose an explicit
+Legacy helpers make every valid parent eligible for the dedicated correlation
+counter, including unsampled parents. Recording is best-effort: lock contention
+or SDK failure may suppress an otherwise eligible operation. For long-lived consumers, choose an explicit
 startup policy with `configure_trace_correlation(sampled_only=True,
 max_traces=<workload budget>)` before any operation. Its process-lifetime cap
 does not bound fleet retention or restart churn. See the metrics reference for

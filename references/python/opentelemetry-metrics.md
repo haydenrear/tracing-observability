@@ -95,8 +95,9 @@ add trace IDs to broad operational instruments.
 
 ## Bound Correlation Cardinality Explicitly
 
-The compatible default still records every valid trace, including unsampled
-parents. A head sampler controls spans, not metric-series retention. For a
+The compatible default still makes every valid trace eligible, including
+unsampled parents. Recording is best-effort; nonblocking lock contention or SDK
+failure can suppress an eligible operation even after instrument initialization. A head sampler controls spans, not metric-series retention. For a
 long-lived service, choose the policy once at startup, **before any bounded
 operation helper runs**:
 

@@ -121,8 +121,9 @@ integration-machine path. See
 
 Before operation helpers run, call
 `configure_trace_correlation(sampled_only=True, max_traces=<budget>)` to cap
-distinct dedicated correlation metric series for this process lifetime. Defaults
-remain compatible and uncapped, including valid unsampled parents. Head sampling
+distinct dedicated correlation metric series for this process lifetime. Default eligibility
+remains uncapped, including valid unsampled parents. Recording is best-effort;
+nonblocking lock contention or SDK failures can suppress eligible operations. Head sampling
 alone does not bound metric cardinality. Fixed-label selection diagnostics
 report suppression; suppressed metric IDs will not satisfy the monitoring CLI's
 all-three-signal requirement. See `references/python/opentelemetry-metrics.md`
