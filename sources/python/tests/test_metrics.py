@@ -281,7 +281,8 @@ def test_force_flush_metrics_reports_the_public_sdk_result(monkeypatch, result):
     monkeypatch.setattr(observability_metrics, "_meter_provider", provider)
 
     assert observability_metrics.force_flush_metrics(timeout_millis=1234) is result
-    assert provider.timeouts == [1234]
+    assert len(provider.timeouts) == 1
+    assert 0 < provider.timeouts[0] <= 1234
 
 
 def test_force_flush_metrics_forwards_only_the_remaining_budget(monkeypatch):
@@ -290,7 +291,7 @@ def test_force_flush_metrics_forwards_only_the_remaining_budget(monkeypatch):
     monkeypatch.setattr(
         observability_metrics.time,
         "monotonic",
-        lambda: next(clock_values),
+        lambda: next(clock_values, 10.25),
     )
     monkeypatch.setattr(observability_metrics, "_meter_provider", provider)
 
