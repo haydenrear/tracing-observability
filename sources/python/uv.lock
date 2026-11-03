@@ -462,7 +462,7 @@ wheels = [
 
 [[package]]
 name = "tracing-skill-observability"
-version = "0.4.2"
+version = "0.4.3"
 source = { editable = "." }
 dependencies = [
     { name = "opentelemetry-api" },

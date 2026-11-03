@@ -77,7 +77,7 @@ configure_observability_from_file("observability.toml")
 ## Endpoints and Ownership
 
 In a service pod, configure no endpoint: the chart injects
-`OTEL_EXPORTER_OTLP_ENDPOINT=http://host.k3d.internal:4318`. Bare-host
+the explicit platform-profile `OTEL_EXPORTER_OTLP_ENDPOINT` (Docker Desktop: `http://host.docker.internal:4318`). Bare-host
 processes default to `http://localhost:4318`. Signal-specific environment
 variables take precedence.
 
