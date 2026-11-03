@@ -486,11 +486,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "opentelemetry-api", specifier = ">=1.36.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.36.0" },
+    { name = "opentelemetry-api", specifier = ">=1.25.0" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.25.0" },
     { name = "opentelemetry-instrumentation-fastapi", marker = "extra == 'fastapi'", specifier = ">=0.46b0" },
     { name = "opentelemetry-instrumentation-requests", marker = "extra == 'requests'", specifier = ">=0.46b0" },
-    { name = "opentelemetry-sdk", specifier = ">=1.36.0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.25.0" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.1" },
 ]
 provides-extras = ["fastapi", "requests"]
