@@ -168,7 +168,8 @@ A true flush reports surfaced SDK completion, never backend acknowledgement.
 
 ### Seconds histogram resolution
 
-With Python API/SDK/HTTP exporter1.36+ (verified locked1.45.2), consumers can pass
+With Python API/SDK/HTTP exporter1.36+ (shared locked tests1.42.1;
+consumer histogram/profile tests1.45.2), consumers can pass
 `explicit_bucket_boundaries_advisory` to owned histogram creation. For seconds,
 the application profile uses16 finite bounds from0.0005 through60 plus overflow.
 Advice is not a provider override: external Views retain precedence. Verify actual
