@@ -24,6 +24,7 @@ from .metrics import (
 )
 from .tracing import (
     TraceHandle,
+    configure_helper_capture,
     configure_tracing,
     configure_span_errors,
     current_trace_handle,
@@ -212,6 +213,7 @@ __all__ = [
     "ObservabilityHandle",
     "TraceHandle",
     "configure_logging",
+    "configure_helper_capture",
     "configure_metrics",
     "configure_trace_correlation",
     "configure_observability",

@@ -80,7 +80,7 @@ exposure serves callers on both sides:
 
 | Caller | OTLP/HTTP base |
 | --- | --- |
-| A service pod | `http://host.k3d.internal:4318` |
+| A service pod | the explicit platform-profile pod endpoint (Docker Desktop: `http://host.docker.internal:4318`) |
 | The host (tests, native runners) | `http://localhost:4318` |
 
 `http://localhost:4318` is the library default, so an unconfigured
@@ -243,16 +243,13 @@ The Jaeger UI is on the monitoring cluster at `http://localhost:16686`.
 A trace that is missing is often a trace that expired. Before concluding
 the instrumentation is broken, check the age of what you are looking for:
 
-| Backend | Retention |
-| --- | --- |
-| Jaeger (spans) | in-memory, 50k traces; **does not survive a monitoring-cluster restart** |
-| Prometheus (metrics) | 15 days, or 10GB |
-| Loki (logs) | 72 hours |
-
-Jaeger's storage is in-memory by design. Traces do survive a *service*
-cluster being destroyed — which is the property the split-out was for —
-but they do not survive the monitoring cluster itself restarting. A
-week-old trace is gone, and its logs are gone at three days.
+The canonical `deploy-helm` monitoring environment owns retention and durable layout.
+Run `monitoring status --json --require-ready` before application deployment and
+`monitoring restart --json` for a preserved-storage stop/start. The current shared
+Jaeger uses durable Badger storage; Prometheus and Loki also retain their PVCs.
+A restart preserves unexpired stored data; it does not extend configured retention.
+Never delete/reset/recreate the monitoring cluster to recover a missing trace.
+Inspect the actual Helm values and monitoring authority for current TTL/size limits.
 
 
 ## Exception data policy (0.4.1)

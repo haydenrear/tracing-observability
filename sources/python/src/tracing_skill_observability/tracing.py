@@ -48,6 +48,31 @@ _trace_id_pattern = re.compile(r"[0-9a-f]{32}")
 _span_error_mode = "full"
 _span_error_policy_started = False
 _span_error_policy_lock = Lock()
+_helper_capture_enabled = True
+_helper_capture_started = False
+_helper_capture_lock = Lock()
+
+
+def configure_helper_capture(*, enabled: bool = True) -> None:
+    """Select helper capture before its first invocation; external SDKs are untouched.
+
+    Decoration does not start capture. Repeating the selected value is idempotent,
+    including after first use. A different value after first use is an error.
+    """
+    if type(enabled) is not bool:
+        raise TypeError("enabled must be a bool")
+    global _helper_capture_enabled
+    with _helper_capture_lock:
+        if _helper_capture_started and enabled != _helper_capture_enabled:
+            raise RuntimeError("helper capture is immutable after first invocation")
+        _helper_capture_enabled = enabled
+
+
+def _capture_for_operation() -> bool:
+    global _helper_capture_started
+    with _helper_capture_lock:
+        _helper_capture_started = True
+        return _helper_capture_enabled
 
 
 @dataclass(frozen=True)
@@ -245,6 +270,10 @@ def _span_error_mode_for_operation() -> str:
 
 @contextmanager
 def span(name: str, **attributes: Any) -> Iterator[trace.Span]:
+    if not _capture_for_operation():
+        # Yield a handle without attaching it over an externally owned context.
+        yield trace.INVALID_SPAN
+        return
     mode = _span_error_mode_for_operation()
     # Preserve the SDK's existing full-mode exception handling.
     if mode == "full":
@@ -307,6 +336,8 @@ def _decorate_with_span(
 
         @wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs):
+            if not _capture_for_operation():
+                return await func(*args, **kwargs)
             mode = _span_error_mode_for_operation()
             with get_tracer().start_as_current_span(
                 name,
@@ -325,6 +356,8 @@ def _decorate_with_span(
 
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs):
+        if not _capture_for_operation():
+            return func(*args, **kwargs)
         mode = _span_error_mode_for_operation()
         with get_tracer().start_as_current_span(
             name,

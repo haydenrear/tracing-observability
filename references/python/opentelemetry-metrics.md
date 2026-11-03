@@ -19,7 +19,7 @@ configure_observability(
 ```
 
 In a pod, pass no endpoint: the chart injects
-`OTEL_EXPORTER_OTLP_ENDPOINT=http://host.k3d.internal:4318`. A bare-host process
+the explicit platform-profile `OTEL_EXPORTER_OTLP_ENDPOINT` (Docker Desktop: `http://host.docker.internal:4318`). A bare-host process
 defaults to `http://localhost:4318`. The metrics-specific
 `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` wins over the function argument and
 general environment variable.
@@ -165,3 +165,13 @@ The aggregate flush still uses one inclusive budget across signals.
 This governs the flush API call, not separate SDK `atexit` shutdown callbacks or
 an externally owned provider's lifecycle. Measure process exit separately.
 A true flush reports surfaced SDK completion, never backend acknowledgement.
+
+### Seconds histogram resolution
+
+With Python API/SDK/HTTP exporter1.36+ (verified locked1.45.2), consumers can pass
+`explicit_bucket_boundaries_advisory` to owned histogram creation. For seconds,
+the application profile uses16 finite bounds from0.0005 through60 plus overflow.
+Advice is not a provider override: external Views retain precedence. Verify actual
+exported bucket schemas; broad SDK defaults can badly resolve subsecond p95.
+Keep service/version/runtime/operation layouts separate and require positive fresh
+count rates for percentile estimates. Missing/idle observations are unknown, not0.

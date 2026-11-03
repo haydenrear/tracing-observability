@@ -54,7 +54,7 @@ the same record will reach Loki through both routes and be counted twice. Use
 `stdout` there, or `otlp-only` when direct export is deliberately required.
 
 When exporting, the OTLP base is `http://localhost:4318` from the host and
-`http://host.k3d.internal:4318` from a pod, where the chart injects it as
+the explicit platform-profile pod endpoint (Docker Desktop: `http://host.docker.internal:4318`) from a pod, where the chart injects it as
 `OTEL_EXPORTER_OTLP_ENDPOINT`. `deploy-helm:references/monitoring-cluster.md`
 is the source of truth for both.
 

@@ -31,7 +31,7 @@ transport, resource, delivery, flush, and lifecycle behavior.
 
 | Caller | OTLP/HTTP base |
 | --- | --- |
-| A service pod | `http://host.k3d.internal:4318` |
+| A service pod | the explicit platform-profile pod endpoint (Docker Desktop: `http://host.docker.internal:4318`) |
 | The host (tests, native runners) | `http://localhost:4318` |
 
 In a pod the chart injects `OTEL_EXPORTER_OTLP_ENDPOINT`, so **you
@@ -113,3 +113,15 @@ startup policy with `configure_trace_correlation(sampled_only=True,
 max_traces=<workload budget>)` before any operation. Its process-lifetime cap
 does not bound fleet retention or restart churn. See the metrics reference for
 suppression diagnostics and the monitoring CLI missing-metric behavior.
+
+## Startup-only owned helper capture (0.4.3)
+
+`configure_helper_capture(enabled=False)` before the first shared helper invocation
+turns `@traced_span` into a direct sync/async call and makes `span` yield an invalid
+handle without attaching it. Decoration alone does not freeze the policy. Strict
+booleans only; the first invocation freezes selection, and repeating that selection
+is idempotent. Configuration racing first use is serialized. Defaults remain enabled.
+This gates helper spans/errors/correlation only: explicit provider setup, logs and
+metrics must be gated separately by the owning application before configuration.
+It never disables external SDKs/providers or public W3C inject/extract. Keep direct
+shared decorators; wrapper dispatch remains common cost in enabled/off comparisons.
